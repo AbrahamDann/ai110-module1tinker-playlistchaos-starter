@@ -10,6 +10,7 @@ from playlist_logic import (
     merge_playlists,
     normalize_song,
     search_songs,
+    contains_song,
 )
 
 
@@ -250,9 +251,13 @@ def add_song_sidebar():
         }
         if title and artist:
             normalized = normalize_song(song)
-            all_songs = st.session_state.songs[:]
-            all_songs.append(normalized)
-            st.session_state.songs = all_songs
+            # avoid duplicates based on title + artist
+            if contains_song(st.session_state.songs, normalized):
+                st.sidebar.warning("That song already exists in the playlist.")
+            else:
+                all_songs = st.session_state.songs[:]
+                all_songs.append(normalized)
+                st.session_state.songs = all_songs
 
 
 def playlist_tabs(playlists):

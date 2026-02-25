@@ -174,6 +174,27 @@ def search_songs(
     return filtered
 
 
+# helpers for duplicate detection
+
+def _song_key(song: Song) -> Tuple[str, str]:
+    """Return a tuple key (title, artist) normalized for comparison."""
+    title = normalize_title(str(song.get("title", ""))).lower()
+    artist = normalize_artist(str(song.get("artist", ""))).lower()
+    return title, artist
+
+
+def contains_song(songs: List[Song], target: Song) -> bool:
+    """Return True if target song already exists in songs list.
+
+    Comparison is based on normalized title and artist.
+    """
+    key = _song_key(target)
+    for s in songs:
+        if _song_key(s) == key:
+            return True
+    return False
+
+
 def lucky_pick(
     playlists: PlaylistMap,
     mode: str = "any",
