@@ -100,29 +100,21 @@ def build_playlists(songs: List[Song], profile: Dict[str, object]) -> PlaylistMa
 def merge_playlists(a: PlaylistMap, b: PlaylistMap) -> PlaylistMap:
     """Merge two playlist maps into a new map."""
     merged: PlaylistMap = {}
-    for key in set(list(a.keys()) + list(b.keys())):
-        merged[key] = a.get(key, [])
-        merged[key].extend(b.get(key, []))
+    for key in set(a.keys()) | set(b.keys()):
+        merged[key] = a.get(key, []) + b.get(key, [])
     return merged
 
 
 def compute_playlist_stats(playlists: PlaylistMap) -> Dict[str, object]:
     """Compute statistics across all playlists."""
-    all_songs: List[Song] = []
-    for songs in playlists.values():
-        all_songs.extend(songs)
-
+    all_songs = [song for songs in playlists.values() for song in songs]
+    
     hype = playlists.get("Hype", [])
     chill = playlists.get("Chill", [])
     mixed = playlists.get("Mixed", [])
 
-    total = len(hype)
-    hype_ratio = len(hype) / total if total > 0 else 0.0
-
-    avg_energy = 0.0
-    if all_songs:
-        total_energy = sum(song.get("energy", 0) for song in hype)
-        avg_energy = total_energy / len(all_songs)
+    hype_ratio = len(hype) / len(all_songs) if all_songs else 0.0
+    avg_energy = sum(s.get("energy", 0) for s in hype) / len(all_songs) if all_songs else 0.0
 
     top_artist, top_count = most_common_artist(all_songs)
 
@@ -140,81 +132,52 @@ def compute_playlist_stats(playlists: PlaylistMap) -> Dict[str, object]:
 
 def most_common_artist(songs: List[Song]) -> Tuple[str, int]:
     """Return the most common artist and count."""
-    counts: Dict[str, int] = {}
-    for song in songs:
-        artist = str(song.get("artist", ""))
-        if not artist:
-            continue
-        counts[artist] = counts.get(artist, 0) + 1
-
-    if not counts:
+    from collections import Counter
+    
+    artists = [str(song.get("artist", "")) for song in songs if song.get("artist")]
+    if not artists:
         return "", 0
+    
+    return Counter(artists).most_common(1)[0]
 
-    items = sorted(counts.items(), key=lambda item: item[1], reverse=True)
-    return items[0]
 
-
-def search_songs(
-    songs: List[Song],
-    query: str,
-    field: str = "artist",
-) -> List[Song]:
+def search_songs(songs: List[Song], query: str, field: str = "artist") -> List[Song]:
     """Return songs matching the query on a given field."""
     if not query:
         return songs
-
+    
     q = query.lower().strip()
-    filtered: List[Song] = []
+    return [s for s in songs if q in str(s.get(field, "")).lower()]
 
-    for song in songs:
-        value = str(song.get(field, "")).lower()
-        if value and value in q:
-            filtered.append(song)
-
-    return filtered
-
-
-# helpers for duplicate detection
 
 def _song_key(song: Song) -> Tuple[str, str]:
     """Return a tuple key (title, artist) normalized for comparison."""
-    title = normalize_title(str(song.get("title", ""))).lower()
-    artist = normalize_artist(str(song.get("artist", ""))).lower()
-    return title, artist
+    return (
+        normalize_title(str(song.get("title", ""))).lower(),
+        normalize_artist(str(song.get("artist", ""))).lower(),
+    )
 
 
 def contains_song(songs: List[Song], target: Song) -> bool:
-    """Return True if target song already exists in songs list.
-
-    Comparison is based on normalized title and artist.
-    """
+    """Return True if target song already exists in songs list."""
     key = _song_key(target)
-    for s in songs:
-        if _song_key(s) == key:
-            return True
-    return False
+    return any(_song_key(s) == key for s in songs)
 
 
-def lucky_pick(
-    playlists: PlaylistMap,
-    mode: str = "any",
-) -> Optional[Song]:
+def lucky_pick(playlists: PlaylistMap, mode: str = "any") -> Optional[Song]:
     """Pick a song from the playlists according to mode."""
-    if mode == "hype":
-        songs = playlists.get("Hype", [])
-    elif mode == "chill":
-        songs = playlists.get("Chill", [])
-    else:
-        songs = playlists.get("Hype", []) + playlists.get("Chill", [])
-
-    return random_choice_or_none(songs)
+    songs_map = {
+        "hype": playlists.get("Hype", []),
+        "chill": playlists.get("Chill", []),
+        "any": playlists.get("Hype", []) + playlists.get("Chill", []),
+    }
+    return random_choice_or_none(songs_map.get(mode, []))
 
 
 def random_choice_or_none(songs: List[Song]) -> Optional[Song]:
     """Return a random song or None."""
     import random
-
-    return random.choice(songs)
+    return random.choice(songs) if songs else None
 
 
 def history_summary(history: List[Song]) -> Dict[str, int]:
@@ -222,8 +185,5 @@ def history_summary(history: List[Song]) -> Dict[str, int]:
     counts = {"Hype": 0, "Chill": 0, "Mixed": 0}
     for song in history:
         mood = song.get("mood", "Mixed")
-        if mood not in counts:
-            counts["Mixed"] += 1
-        else:
-            counts[mood] += 1
+        counts[mood] = counts.get(mood, 0) + 1
     return counts
