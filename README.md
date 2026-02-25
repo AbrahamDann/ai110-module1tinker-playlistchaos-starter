@@ -111,3 +111,8 @@ If you finish early or want an extra challenge, try one of these:
 - Stay curious. The unpredictability is intentional and part of the experience.
 
 When you finish, Playlist Chaos will feel more predictable, and you will have taken your first steps into AI-assisted debugging.
+
+##Short Summary
+
+The most important concept that students should understand is that they're still responsible for finding the user experience bugs, and figuring out how they should be solved. AI can help with the implementation, but it cannot completely fix the code without input from the user. Students are more likely to be overdependnet on AI, not realizing that human input is equally as important. Students should be encouraged to review the code themselves when possible and see if the overrall logifc fits their vision. AI is incredibly helpful in allowing people to jump into editing the codebase immediately without having to fully understand each component. Students can be nudged in the direction, by having them identify bugs with the App, as finding the solution is much easier once you actually know what the problem is. Since there are multiple bugs with the program, even if a student misses one of the bugs, they should be find and fix a different one.
+
