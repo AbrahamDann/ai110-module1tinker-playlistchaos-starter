@@ -1,4 +1,4 @@
-# Playlist Chaos
+# Playlist Chaos 
 
 Your AI assistant tried to build a smart playlist generator. The app runs, but some of the behavior is unpredictable. Your task is to explore the app, investigate the code, and use an AI assistant to debug and improve it.
 
